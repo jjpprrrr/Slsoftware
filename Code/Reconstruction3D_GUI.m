@@ -787,9 +787,9 @@ end
 %%%%%%%%% PREPARE PARALLAL COMPUTING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% This part is not necessary for MATLAB 2014a or later version
-if matlabpool('size') == 0 % checking to see if my pool is already open
-    matlabpool open
-end
+% if matlabpool('size') == 0 % checking to see if my pool is already open
+%     matlabpool open
+% end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -921,6 +921,29 @@ for frame = ReconFrames,
         m.movie3Drecon(:,:,:,k) = Xvolume;
         ttime = toc;
         disp(['Writing time: ' num2str(ttime) ' secs']);
+        
+        % start saving tif file
+        XguessFinal = double(XguessCPU);
+        if saturate,
+            XguessSAVE1 = uint16(round(1*65535*XguessFinal/max(XguessFinal(:))));
+            XguessSAVE2 = uint16(round(saturationGain*65535*XguessFinal/max(XguessFinal(:))));    
+            XguessVIEW = uint16(round(saturationGain*65535*XguessFinal/max(XguessFinal(:))));
+        else    
+            XguessSAVE1 = uint16(round(1*65535*XguessFinal/max(XguessFinal(:))));
+            XguessVIEW = XguessSAVE1;
+        end
+        
+        imwrite( squeeze(XguessSAVE1(:,:,1)), [savePath 'Recon3D_' inputFileName(1:end-4) '_t' num2str(k,'%04.f') '.tif']);
+        for k1 = 2:size(XguessSAVE1,3),
+            imwrite(squeeze(XguessSAVE1(:,:,k1)),  [savePath 'Recon3D_' inputFileName(1:end-4) '_t' num2str(k,'%04.f') '.tif'], 'WriteMode', 'append');
+        end
+        if saturate,
+            imwrite( squeeze(XguessSAVE2(:,:,2)), [savePath 'Recon3D_saturate_' inputFileName(1:end-4) '_t' num2str(k,'%04.f') '.tif']);
+            for k1 = 2:size(XguessSAVE2,3)
+                imwrite(squeeze(XguessSAVE2(:,:,k1)),  [savePath 'Recon3D_saturate_' inputFileName(1:end-4) '_t' num2str(k,'%04.f') '.tif'], 'WriteMode', 'append');
+            end
+        end
+        disp(['Frame #' num2str(k) ' has been saved as .tif file.']);
     else
         Xvolume = uint16(round(65535*MV3Dgain*XguessCPU));
         if edgeSuppress,            
