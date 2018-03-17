@@ -31,7 +31,7 @@ function varargout = Reconstruction3D_GUI(varargin)
 
 % Edit the above text to modify the response to help Reconstruction3D_GUI
 
-% Last Modified by GUIDE v2.5 20-Mar-2014 17:21:43
+% Last Modified by GUIDE v2.5 17-Mar-2018 02:45:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -77,6 +77,8 @@ settingRECON.whichSolver  = get(handles.popupmenuWhichSolver,'Value');
 settingRECON.saturationGain  = get(handles.editSaturationGain,'string');
 settingRECON.contrast  = get(handles.editContrast,'string');
 settingRECON.PSFfilenum = 1;
+settingRECON.EMAILON = get(handles.checkboxEMAILON, 'Value');
+settingRECON.emailStr = get(handles.editEmail, 'string');
 
 save(fileName, 'settingRECON');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,7 +107,8 @@ if exist(fileName)
     set(handles.editSaturationGain,'string', settingRECON.saturationGain);
     set(handles.checkboxDiskVariable,'Value', settingRECON.useDiskVariable);
     set(handles.editContrast,'string', settingRECON.contrast);
-
+    set(handles.checkboxEMAILON, 'Value', settingRECON.EMAILON);
+    set(handles.editEmail, 'string', settingRECON.emailStr);
 else
     set(handles.editmaxIter, 'string', '8');
     set(handles.editFirstFrame, 'string', '1');
@@ -120,6 +123,8 @@ else
     set(handles.editSaturationGain,'string', '1');
     set(handles.checkboxDiskVariable,'Value', 0);
     set(handles.editContrast,'string', 0.95);
+    set(handles.checkboxGPUON, 'Value', 0);
+    set(handles.editEmail, 'string', '');
     
     settingRECON.PSFfilenum = 1;
 end
@@ -250,6 +255,8 @@ set(handles.editDecimationRatio, 'string', '1');
 set(handles.checkboxGPUON,'Value', 0);
 set(handles.checkboxindpIter,'Value', 1);
 set(handles.checkboxEdgeSuppress,'Value', 0);
+set(handles.checkboxEMAILON, 'Value', 0);
+set(handles.editEmail, 'string', '');
 % set(handles.listboxPSF,'string', '');
 if exist('../PSFmatrix/')==7,
    ; 
@@ -773,7 +780,8 @@ saturationGain = str2num(settingRECON.saturationGain);      %% Output will be au
 contrast = str2num(settingRECON.contrast);                  %% Contrast adjustment value used if one wants to use the result from last frame as the initial guess for the next frame. contrast<1 is often required to avoid artifact. Low value will result in low contrast in the result.
 edgeSuppress = settingRECON.edgeSuppress;                   %% Since border area in the reconstruction result is often subject to artifacts, user can simply assign zeros to the region by turning this option on.
 useDiskVariable = settingRECON.useDiskVariable;             %% Result can be directly saved the result on disk in a frame-by-frame manner. Recommended for large data. SSD is strongly recommended.
-
+emailNotification = settingRECON.EMAILON;
+emailAddress = settingRECON.emailStr;
 
 savePath = ['..\Data\03_Reconstructed\' inputFilePath( findstr(inputFilePath, '\Data\02_Rectified\') + 19 : end)];
 if exist(savePath)==7,
@@ -991,13 +999,54 @@ end
 
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp(['Volume reconstruction complete.']);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if emailNotification
+    msg = ['Reconstruction completed on ' datestr(datetime('now')) '. Results have been saved on ' savePath ];
+    subject = ['Reconstruction completed on ' datestr(datetime('now')) ];
+    matlabmail(emailAddress, msg, subject);
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% --- Executes on button press in checkboxEMAILON.
+function checkboxEMAILON_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxEMAILON (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkboxEMAILON
+global settingRECON;
+if (((get(hObject,'Value') == get(hObject,'Max'))))
+    settingRECON.EMAILON = 1;
+else
+    settingRECON.EMAILON = 0;
+end
+
+
+
+function editEmail_Callback(hObject, eventdata, handles)
+% hObject    handle to editEmail (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of editEmail as text
+%        str2double(get(hObject,'String')) returns contents of editEmail as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function editEmail_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editEmail (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
